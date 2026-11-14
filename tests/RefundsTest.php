@@ -32,4 +32,23 @@ final class RefundsTest extends TestCase
 
         self::assertNull(Refunds::paymentIntentOf($session));
     }
+
+    public function testNoPaymentIntentWhileTheInvoiceHasNoPayments(): void
+    {
+        // An open invoice: nothing has paid it yet. Before API version 2025-03-31.basil it carries
+        // payment_intent null; from that version on, an empty list of payments.
+        $session = Session::constructFrom([
+            'id' => 'cs_test_3',
+            'object' => 'checkout.session',
+            'mode' => 'subscription',
+            'invoice' => [
+                'id' => 'in_test_3',
+                'object' => 'invoice',
+                'payment_intent' => null,
+                'payments' => ['object' => 'list', 'data' => []],
+            ],
+        ]);
+
+        self::assertNull(Refunds::paymentIntentOf($session));
+    }
 }
