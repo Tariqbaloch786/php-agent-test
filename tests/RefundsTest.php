@@ -7,6 +7,7 @@ namespace Tests;
 use App\Billing\Refunds;
 use PHPUnit\Framework\TestCase;
 use Stripe\Checkout\Session;
+use Stripe\PaymentIntent;
 
 final class RefundsTest extends TestCase
 {
@@ -19,7 +20,18 @@ final class RefundsTest extends TestCase
             'invoice' => [
                 'id' => 'in_test_1',
                 'object' => 'invoice',
-                'payment_intent' => ['id' => 'pi_test_1', 'object' => 'payment_intent'],
+                'payments' => [
+                    'data' => [
+                        [
+                            'payment' => [
+                                'payment_intent' => PaymentIntent::constructFrom([
+                                    'id' => 'pi_test_1',
+                                    'object' => 'payment_intent',
+                                ]),
+                            ],
+                        ],
+                    ],
+                ],
             ],
         ]);
 

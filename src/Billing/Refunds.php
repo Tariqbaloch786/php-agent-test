@@ -22,7 +22,11 @@ final class Refunds
     /** Refunds `$amount` of an order and returns the refund's id. */
     public function refundOrder(string $sessionId, int $amount): string
     {
-        $session = $this->stripe->checkout->sessions->retrieve($sessionId, ['expand' => ['invoice.payment_intent']]);
+        // Expand the payments list on the invoice; the payment_intent is now nested inside it.
+        $session = $this->stripe->checkout->sessions->retrieve(
+            $sessionId,
+            ['expand' => ['invoice.payments']]
+        );
         $paymentIntent = self::paymentIntentOf($session);
         if ($paymentIntent === null) {
             throw new \RuntimeException(sprintf('Checkout Session %s has no paid invoice to refund', $sessionId));
@@ -39,11 +43,17 @@ final class Refunds
         if (!$invoice instanceof Invoice) {
             return null;
         }
-        $paymentIntent = $invoice->payment_intent;
-        if ($paymentIntent instanceof PaymentIntent) {
-            return $paymentIntent->id;
+        $payments = $invoice->payments ?? null;
+        if ($payments && is_array($payments->data)) {
+            $first = $payments->data[0] ?? null;
+            $paymentIntent = $first?->payment?->payment_intent ?? null;
+            if ($paymentIntent instanceof PaymentIntent) {
+                return $paymentIntent->id;
+            }
+
+            return is_string($paymentIntent) ? $paymentIntent : null;
         }
 
-        return is_string($paymentIntent) ? $paymentIntent : null;
+        return null;
     }
 }
